@@ -1,12 +1,12 @@
 import contains from 'dom-helpers/query/contains';
 import React, { cloneElement } from 'react';
 import PropTypes from 'prop-types';
-import ReactDOM from 'react-dom';
 import warning from 'warning';
 
 import Overlay from './Overlay';
 
 import createChainedFunction from './utils/createChainedFunction';
+import PortalWrapper from './PortalWrapper';
 
 /**
  * Check if value one is inside or equal to the of value
@@ -112,28 +112,9 @@ class OverlayTrigger extends React.Component {
     this.handleMouseOut = e =>
       this.handleMouseOverOut(this.handleDelayedHide, e, 'toElement');
 
-    this._mountNode = null;
-
     this.state = {
       show: props.defaultOverlayShown
     };
-  }
-
-  componentDidMount() {
-    this._mountNode = document.createElement('div');
-    this.renderOverlay();
-  }
-
-  componentDidUpdate() {
-    this.renderOverlay();
-  }
-
-  componentWillUnmount() {
-    ReactDOM.unmountComponentAtNode(this._mountNode);
-    this._mountNode = null;
-
-    clearTimeout(this._hoverShowDelay);
-    clearTimeout(this._hoverHideDelay);
   }
 
   handleDelayedHide() {
@@ -217,27 +198,21 @@ class OverlayTrigger extends React.Component {
 
   makeOverlay(overlay, props) {
     return (
-      <Overlay
-        {...props}
-        show={this.state.show}
-        onHide={this.handleHide}
-        target={this}
-      >
-        {overlay}
-      </Overlay>
+      <PortalWrapper>
+        <Overlay
+          {...props}
+          show={this.state.show}
+          onHide={this.handleHide}
+          target={this}
+        >
+          {overlay}
+        </Overlay>
+      </PortalWrapper>
     );
   }
 
   show() {
     this.setState({ show: true });
-  }
-
-  renderOverlay() {
-    ReactDOM.unstable_renderSubtreeIntoContainer(
-      this,
-      this._overlay,
-      this._mountNode
-    );
   }
 
   render() {
@@ -312,9 +287,12 @@ class OverlayTrigger extends React.Component {
       );
     }
 
-    this._overlay = this.makeOverlay(overlay, props);
-
-    return cloneElement(child, triggerProps);
+    return (
+      <>
+        {cloneElement(child, triggerProps)}
+        {this.makeOverlay(overlay, props)}
+      </>
+    );
   }
 }
 
